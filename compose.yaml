@@ -1,0 +1,37 @@
+
+services:
+  rust_scaler:
+    image: rust_scaler:latest
+    deploy:
+      mode: replicated
+      replicas: 1 # Number of manager instances
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager  # Only deploy on manager nodes
+    environment:
+      SERVICE_ID: "your_service_id_here"
+      CPU_THRESHOLD: "800000000"
+      LOCAL_ADDR: "rust_scaler:4000"  # Using the service name to resolve peer IPs
+    networks:
+      - scaler-network
+    volumes:
+      - tls_certs:/tls  # Mount the TLS certificates
+    ports:
+      - "4000:4000/udp"  # Expose the UDP port for communication
+
+volumes:
+  tls_certs:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "/path/to/your/tls/directory"  # Adjust path to actual TLS directory
+
+networks:
+  scaler-network:
+    driver: overlay
